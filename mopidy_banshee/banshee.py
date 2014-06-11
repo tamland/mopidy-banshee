@@ -25,7 +25,7 @@ def get_tracks(query):
     con.row_factory = sqlite3.Row
     q = """
         SELECT CoreTracks.Title AS TrackName, CoreTracks.Uri,
-        CoreTracks.TrackNumber, CoreTracks.Year,
+        CoreTracks.TrackNumber, CoreTracks.Year, CoreTracks.Duration,
         CoreArtists.Name AS ArtistName, CoreAlbums.Title AS AlbumName
         FROM CoreTracks
         LEFT OUTER JOIN CoreArtists ON CoreArtists.ArtistID = CoreTracks.ArtistID
@@ -47,7 +47,8 @@ def _create_track(row):
         artists=[artist],
         album=album,
         uri=row[b'Uri'],
-        date=unicode(row[b'Year']),)
+        date=unicode(row[b'Year']),
+        length=row[b'Duration'])
     return track
 
 
