@@ -20,8 +20,8 @@ import sqlite3
 from mopidy.models import Track, Artist, Album
 
 
-def get_tracks(query):
-    con = sqlite3.connect('banshee.db')
+def get_tracks(database):
+    con = sqlite3.connect(database)
     con.row_factory = sqlite3.Row
     q = """
         SELECT CoreTracks.Title AS TrackName, CoreTracks.Uri,

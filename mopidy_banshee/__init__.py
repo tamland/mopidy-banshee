@@ -40,7 +40,7 @@ class Extension(ext.Extension):
 
     def get_config_schema(self):
         schema = super(Extension, self).get_config_schema()
-        schema['db'] = config.String()
+        schema['database_file'] = config.String()
         return schema
 
     def setup(self, registry):
@@ -53,15 +53,15 @@ class BansheeBackend(ThreadingActor, mopidy.backend.Backend):
     def __init__(self, config, audio):
         super(BansheeBackend, self).__init__()
         self.config = config
-        self.library = BansheeLibraryProvider(backend=self, db=config['banshee']['db'])
+        self.library = BansheeLibraryProvider(self, config['banshee'])
 
 
 class BansheeLibraryProvider(LibraryProvider):
 
-    def __init__(self, backend, db):
+    def __init__(self, backend, config):
         super(BansheeLibraryProvider, self).__init__(backend)
         self._tracks = None
-        self._db = db
+        self.database_file = os.path.expanduser(config['database_file'])
 
     def find_exact(self, query=None, uris=None):
         try:
@@ -69,7 +69,7 @@ class BansheeLibraryProvider(LibraryProvider):
             if query is None:
                 return None
             if self._tracks is None:
-                self._tracks = banshee.get_tracks(query)
+                self._tracks = banshee.get_tracks(self.database_file)
             return search.find_exact(self._tracks, query, uris)
         except Exception as e:
             traceback.print_exc()
