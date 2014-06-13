@@ -41,6 +41,7 @@ class Extension(ext.Extension):
     def get_config_schema(self):
         schema = super(Extension, self).get_config_schema()
         schema['database_file'] = config.String()
+        schema['art_dir'] = config.String()
         return schema
 
     def setup(self, registry):
@@ -62,6 +63,7 @@ class BansheeLibraryProvider(LibraryProvider):
         super(BansheeLibraryProvider, self).__init__(backend)
         self._tracks = None
         self.database_file = os.path.expanduser(config['database_file'])
+        self.art_dir = os.path.expanduser(config['art_dir'])
 
     def find_exact(self, query=None, uris=None):
         try:
@@ -69,7 +71,7 @@ class BansheeLibraryProvider(LibraryProvider):
             if query is None:
                 return None
             if self._tracks is None:
-                self._tracks = banshee.get_tracks(self.database_file)
+                self._tracks = banshee.get_tracks(self.database_file, self.art_dir)
             return search.find_exact(self._tracks, query, uris)
         except Exception as e:
             traceback.print_exc()

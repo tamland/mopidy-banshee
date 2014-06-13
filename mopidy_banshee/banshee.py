@@ -16,31 +16,39 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import unicode_literals
 
+import os
 import sqlite3
+from functools import partial
 from mopidy.models import Track, Artist, Album
 
 
-def get_tracks(database):
+
+def get_tracks(database, art_dir):
     con = sqlite3.connect(database)
     con.row_factory = sqlite3.Row
     q = """
         SELECT CoreTracks.Title AS TrackName, CoreTracks.Uri,
         CoreTracks.TrackNumber, CoreTracks.Year, CoreTracks.Duration,
-        CoreArtists.Name AS ArtistName, CoreAlbums.Title AS AlbumName
+        CoreArtists.Name AS ArtistName, CoreAlbums.Title AS AlbumName,
+        CoreAlbums.ArtworkID
         FROM CoreTracks
         LEFT OUTER JOIN CoreArtists ON CoreArtists.ArtistID = CoreTracks.ArtistID
         LEFT OUTER JOIN CoreAlbums ON CoreAlbums.AlbumID = CoreTracks.AlbumID
         """
-    tracks = [_create_track(row) for row in con.execute(q)]
+    create_track = partial(_create_track, art_dir=art_dir)
+    tracks = [create_track(row) for row in con.execute(q)]
     con.close()
     return tracks
 
 
-def _create_track(row):
+def _create_track(row, art_dir):
+    art_id = row[b'ArtworkID']
+    images = [os.path.join(art_dir, art_id + '.jpg')] if art_id else []
     artist = Artist(name=row[b'ArtistName'],)
     album = Album(
         name=row[b'AlbumName'],
-        artists=[artist],)
+        artists=[artist],
+        images=images)
     track = Track(
         name=row[b'TrackName'],
         track_no=int(row[b'TrackNumber']),
