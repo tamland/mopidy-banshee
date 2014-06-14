@@ -55,17 +55,18 @@ class BansheeBackend(ThreadingActor, mopidy.backend.Backend):
     def __init__(self, config, audio):
         super(BansheeBackend, self).__init__()
         self.config = config
-        self.library = BansheeLibraryProvider(self, config['banshee'])
-        self.playlists = BansheePlaylistProvider(self, config['banshee'])
+        database_file = os.path.expanduser(config['banshee']['database_file'])
+        art_dir = os.path.expanduser(config['banshee']['art_dir'])
+        self.banshee_db = banshee.BansheeDB(database_file, art_dir)
+        self.library = BansheeLibraryProvider(self, self.banshee_db)
+        self.playlists = BansheePlaylistProvider(self, self.banshee_db)
 
 
 class BansheeLibraryProvider(LibraryProvider):
-
-    def __init__(self, backend, config):
+    def __init__(self, backend, banshee_db):
         super(BansheeLibraryProvider, self).__init__(backend)
         self._tracks = None
-        self.database_file = os.path.expanduser(config['database_file'])
-        self.art_dir = os.path.expanduser(config['art_dir'])
+        self.banshee_db = banshee_db
 
     def find_exact(self, query=None, uris=None):
         try:
@@ -73,7 +74,7 @@ class BansheeLibraryProvider(LibraryProvider):
             if query is None:
                 return None
             if self._tracks is None:
-                self._tracks = banshee.get_tracks(self.database_file, self.art_dir)
+                self._tracks = self.banshee_db.get_tracks()
             return search.find_exact(self._tracks, query, uris)
         except Exception as e:
             traceback.print_exc()
@@ -93,13 +94,12 @@ class BansheeLibraryProvider(LibraryProvider):
 
 
 class BansheePlaylistProvider(mopidy.backend.PlaylistsProvider):
-    def __init__(self, backend, config):
+    def __init__(self, backend, banshee_db):
         super(BansheePlaylistProvider, self).__init__(backend)
-        self.database_file = os.path.expanduser(config['database_file'])
-        self.art_dir = os.path.expanduser(config['art_dir'])
-        self._playlists = banshee.get_playlists(self.database_file, self.art_dir)
+        self.banshee_db = banshee_db
+        self._playlists = banshee_db.get_playlists()
 
     def lookup(self, uri):
         pl_id = int(uri.split(':')[-1])
-        tracks = banshee.get_playlist_tracks(self.database_file, self.art_dir, pl_id)
+        tracks = self.banshee_db.get_playlist_tracks(pl_id)
         return Playlist(tracks=tracks)
