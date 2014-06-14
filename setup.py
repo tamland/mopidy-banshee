@@ -26,7 +26,7 @@ setup(
     },
     keywords='mopidy banshee',
     classifiers=[
-        'Development Status :: 3 Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: End Users/Desktop',
         'Environment :: No Input/Output (Daemon)',
         'Topic :: Multimedia :: Sound/Audio :: Players',
