@@ -21,6 +21,7 @@ import logging
 import traceback
 from mopidy import config, ext
 import mopidy
+from mopidy.models import Playlist
 from pykka import ThreadingActor
 from mopidy.backend import LibraryProvider
 from mopidy.local import search
@@ -55,6 +56,7 @@ class BansheeBackend(ThreadingActor, mopidy.backend.Backend):
         super(BansheeBackend, self).__init__()
         self.config = config
         self.library = BansheeLibraryProvider(self, config['banshee'])
+        self.playlists = BansheePlaylistProvider(self, config['banshee'])
 
 
 class BansheeLibraryProvider(LibraryProvider):
@@ -88,3 +90,16 @@ class BansheeLibraryProvider(LibraryProvider):
     def refresh(self, uri=None):
         log.debug("banshee::refresh(%s)" % (uri))
         raise NotImplementedError
+
+
+class BansheePlaylistProvider(mopidy.backend.PlaylistsProvider):
+    def __init__(self, backend, config):
+        super(BansheePlaylistProvider, self).__init__(backend)
+        self.database_file = os.path.expanduser(config['database_file'])
+        self.art_dir = os.path.expanduser(config['art_dir'])
+        self._playlists = banshee.get_playlists(self.database_file, self.art_dir)
+
+    def lookup(self, uri):
+        pl_id = int(uri.split(':')[-1])
+        tracks = banshee.get_playlist_tracks(self.database_file, self.art_dir, pl_id)
+        return Playlist(tracks=tracks)

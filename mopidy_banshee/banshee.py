@@ -19,7 +19,7 @@ from __future__ import unicode_literals
 import os
 import sqlite3
 from functools import partial
-from mopidy.models import Track, Artist, Album
+from mopidy.models import Track, Artist, Album, Playlist
 
 
 
@@ -51,13 +51,43 @@ def _create_track(row, art_dir):
         images=images)
     track = Track(
         name=row[b'TrackName'],
-        track_no=int(row[b'TrackNumber']),
+        track_no=row[b'TrackNumber'],
         artists=[artist],
         album=album,
         uri=row[b'Uri'],
         date=unicode(row[b'Year']),
         length=row[b'Duration'])
     return track
+
+
+def get_playlists(database, art_dir):
+    con = sqlite3.connect(database)
+    con.row_factory = sqlite3.Row
+    q = """SELECT PlaylistID, Name FROM CorePlaylists"""
+    playlists = [Playlist(uri='banshee:playlist:%d' % int(row[b'PlaylistID']),
+                          name=row[b'Name']) for row in con.execute(q)]
+    con.close()
+    return playlists
+
+
+def get_playlist_tracks(database, art_dir, playlist_id):
+    con = sqlite3.connect(database)
+    con.row_factory = sqlite3.Row
+    q = """
+        SELECT CoreTracks.Title AS TrackName, CoreTracks.Uri,
+        CoreTracks.TrackNumber, CoreTracks.Year, CoreTracks.Duration,
+        CoreArtists.Name AS ArtistName, CoreAlbums.Title AS AlbumName,
+        CoreAlbums.ArtworkID
+        FROM CorePlaylistEntries
+        LEFT OUTER JOIN CoreTracks ON CoreTracks.TrackID = CorePlaylistEntries.TrackID
+        LEFT OUTER JOIN CoreArtists ON CoreArtists.ArtistID = CoreTracks.ArtistID
+        LEFT OUTER JOIN CoreAlbums ON CoreAlbums.AlbumID = CoreTracks.AlbumID
+        WHERE CorePlaylistEntries.PlaylistID = ?
+        """
+    create_track = partial(_create_track, art_dir=art_dir)
+    tracks = [create_track(row) for row in con.execute(q, (playlist_id,))]
+    con.close()
+    return tracks
 
 
 if __name__ == '__main__':
