@@ -32,7 +32,7 @@ log = logging.getLogger('banshee')
 class Extension(ext.Extension):
     dist_name = 'Mopidy-Banshee'
     ext_name = 'banshee'
-    version = '0.1.0'
+    version = '0.1.1'
 
     def get_default_config(self):
         conf_file = os.path.join(os.path.dirname(__file__), 'ext.conf')
