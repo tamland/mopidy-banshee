@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='Mopidy-Banshee',
-    version='0.1.1',
+    version='0.1.2',
     description='Banshee extension for Mopidy',
     long_description=open('README.rst').read(),
     author='Thomas Amland',
